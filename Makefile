@@ -1,11 +1,18 @@
-DEVICE     = atmega328p
-CLOCK      = 8000000 
-PROGRAMMER = -c usbtiny -P usb
-OBJECTS    = main.o io.o uart.o
-#OBJECTS = main.o
-#OBJECTS = maintest.o
-FUSES      = -U hfuse:w:0xd9:m -U lfuse:w:0xe2:m
-FUSES_DEBUG= -U hfuse:w:0x99:m -U lfuse:w:0xe2:m
+# This is a Makefile for compiling AVR projects and deploying them with avr-dude.
+# This Makefile was partly inspired/stolen from: https://ece-classes.usc.edu/ee459/library/samples/AVR/Makefile-ATmega328P
+
+###############################################################################
+# CONFIG
+###############################################################################
+
+DEVICE      = atmega328p
+CLOCK       = 8000000 
+PROGRAMMER  = -c usbtiny -P usb
+FUSES       = -U hfuse:w:0xd9:m -U lfuse:w:0xe2:m
+
+SOURCE_DIR  = src
+OBJECT_DIR  = build
+OUT_NAME = main
 
 # Fuse Low Byte = 0xe2   Fuse High Byte = 0xd9   Fuse Extended Byte = 0xff
 # Bit 7: CKDIV8  = 1     Bit 7: RSTDISBL  = 1    Bit 7:
@@ -23,74 +30,57 @@ FUSES_DEBUG= -U hfuse:w:0x99:m -U lfuse:w:0xe2:m
 # Serial program downloading enabled, debug wire disabled,
 # Reset enabled, brown-out detection disabled
 
-# Tune the lines below only if you know what you are doing:
+###############################################################################
+
+C_SOURCE := $(shell find $(SOURCE_DIR) -name '*.c')
+ASM_SOURCE := $(shell find $(SOURCE_DIR) -name '*.S')
+C_OBJECTS := $(patsubst $(SOURCE_DIR)/%.c, $(OBJECT_DIR)/%.o, $(C_SOURCE))
+ASM_OBJECTS := $(patsubst $(SOURCE_DIR)/%.S, $(OBJECT_DIR)/%.o, $(ASM_SOURCE))
+
+OBJECTS := $(C_OBJECTS) $(ASM_OBJECTS)
 
 AVRDUDE = avrdude $(PROGRAMMER) -p $(DEVICE)
 COMPILE = avr-gcc -Wall -Os -DF_CPU=$(CLOCK) -mmcu=$(DEVICE)
-#COMPILE = avr-gcc -Wall -Og -DF_CPU=$(CLOCK) -mmcu=$(DEVICE)
 
 # symbolic targets:
-all:	main.hex
+all: $(OUT_NAME).hex
 
-#.c.o:
-	#$(COMPILE) -c $< -o $@
-main.o:
-	$(COMPILE) -c main.c -o $@
-#maintest.o:
-	#$(COMPILE) -c maintest.c -o $@
+$(C_OBJECTS): $(OBJECT_DIR)/%.o: $(SOURCE_DIR)/%.c
+	$(COMPILE) -c $< -o $@
 
-io.o:
-	$(COMPILE) -c io.S -o $@
+$(ASM_OBJECTS): $(OBJECT_DIR)/%.o: $(SOURCE_DIR)/%.S
+	$(COMPILE) -dD -c $< -o $@
 
-uart.o:
-	$(COMPILE) -dD -c uart.S -o $@
-
-#.S.o:
-	#$(COMPILE) -x assembler-with-cpp -c $< -o $@
-## "-x assembler-with-cpp" should not be necessary since this is the default
-## file type for the .S (with capital S) extension. However, upper case
-## characters are not always preserved on Windows. To ensure WinAVR
-## compatibility define the file type manually.
-
-#.c.s:
-	#$(COMPILE) -S $< -o $@
+$(OBJECT_DIR):
+	@ mkdir -p $(OBJECT_DIR)
 
 verify:
 	$(AVRDUDE) -n
 
 flash:	all
-	$(AVRDUDE) -U flash:w:main.hex:i
+	$(AVRDUDE) -U flash:w:$(OUT_NAME).hex:i
 
 fuse:
 	$(AVRDUDE) $(FUSES)
 
-fuse-debug:
-	$(AVRDUDE) $(DEBUG_FUSES)
-
-# Xcode uses the Makefile targets "", "clean" and "install"
-install: flash fuse
-
 # if you use a bootloader, change the command below appropriately:
 load: all
-	bootloadHID main.hex
+	bootloadHID $(OUT_NAME).hex
 
 clean:
-	rm -f main.hex main.elf $(OBJECTS)
+	rm -fr $(OUT_NAME).hex $(OUT_NAME).elf $(OBJECT_DIR)
 
 # file targets:
-main.elf: $(OBJECTS)
-	$(COMPILE) -o main.elf $(OBJECTS)
+$(OUT_NAME).elf: $(OBJECT_DIR) $(OBJECTS)
+	$(COMPILE) -o $(OUT_NAME).elf $(OBJECTS)
 
-main.hex: main.elf
-	rm -f main.hex
-	avr-objcopy -j .text -j .data -O ihex main.elf main.hex
-	avr-size --format=avr --mcu=$(DEVICE) main.elf
+$(OUT_NAME).hex: $(OUT_NAME).elf
+	rm -f $(OUT_NAME).hex
+	avr-objcopy -j .text -j .data -O ihex $(OUT_NAME).elf $(OUT_NAME).hex
+	avr-size --format=avr --mcu=$(DEVICE) $(OUT_NAME).elf
 # If you have an EEPROM section, you must also create a hex file for the
 # EEPROM and add it to the "flash" target.
 
 # Targets for code debugging and analysis:
-disasm:	main.elf
-	avr-objdump -d main.elf
-
-cpp:
-	$(COMPILE) -E main.c
+disasm:	$(OUT_NAME).elf
+	avr-objdump -d $(OUT_NAME).elf
