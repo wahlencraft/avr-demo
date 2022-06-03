@@ -6,7 +6,7 @@
 ###############################################################################
 
 DEVICE      = atmega328p
-CLOCK       = 8000000 
+CLOCK       = 8000000
 PROGRAMMER  = -c usbtiny -P usb
 FUSES       = -U hfuse:w:0xd9:m -U lfuse:w:0xe2:m
 
@@ -45,20 +45,20 @@ COMPILE = avr-gcc -Wall -Os -DF_CPU=$(CLOCK) -mmcu=$(DEVICE)
 # symbolic targets:
 all: $(OUT_NAME).hex
 
-$(C_OBJECTS): $(OBJECT_DIR)/%.o: $(SOURCE_DIR)/%.c
+$(C_OBJECTS): $(OBJECT_DIR)/%.o: $(SOURCE_DIR)/%.c Makefile
 	$(COMPILE) -c $< -o $@
 
-$(ASM_OBJECTS): $(OBJECT_DIR)/%.o: $(SOURCE_DIR)/%.S
+$(ASM_OBJECTS): $(OBJECT_DIR)/%.o: $(SOURCE_DIR)/%.S Makefile
 	$(COMPILE) -dD -c $< -o $@
 
 $(OBJECT_DIR):
 	@ mkdir -p $(OBJECT_DIR)
 
 verify:
-	$(AVRDUDE) -n
+	sudo $(AVRDUDE) -n
 
 flash:	all
-	$(AVRDUDE) -U flash:w:$(OUT_NAME).hex:i
+	sudo $(AVRDUDE) -U flash:w:$(OUT_NAME).hex:i
 
 fuse:
 	$(AVRDUDE) $(FUSES)
