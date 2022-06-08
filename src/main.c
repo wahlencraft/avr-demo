@@ -11,19 +11,34 @@
 extern void enable();
 extern void toggle();
 
+void debug_print(uint8_t index) {
+    printf("%u: TM=%u, OC=%d TIFR=0x%x\n", index, read_timer1(), OCR1A, TIFR1);
+}
+
 int main() {
     stdout = &usart_stdout;
     USART_init();
-    start_counter1();
+    start_counter0();
     enable();
     printf("\nNEW\n");
+    uint8_t count;
     while(1) {
-        printf("Blink ON\n");
-        toggle();
-        busy_wait_ms(1000);
-        printf("Blink OFF\n");
-        toggle();
-        busy_wait_ms(500);
+        count = 0;
+        printf("Blink HIGH\n");
+        while (count++ != 200) {
+            toggle();
+            busy_wait_ms0(2);
+            toggle();
+            busy_wait_ms0(8);
+        }
+        count = 0;
+        printf("Blink LOW\n");
+        while (count++ != 100) {
+            toggle();
+            busy_wait_ms0(1);
+            toggle();
+            busy_wait_ms0(19);
+        }
     }
 }
 
