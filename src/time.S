@@ -50,36 +50,39 @@ read_timer1:
 
 .global mul16
 ; R25:R24 = R25:R24 * R23:R22
+#define Z1 R25
+#define Z0 R24
+#define X1 R19
+#define X0 R18
+#define Y1 R23
+#define Y0 R22
 mul16:
     PUSH R0;
-    PUSH R2;
-    PUSH R3;
+    MOVW R18, R24;
+    ; Now calculate R25:R24 = R19:R18 * R23:R22
+    ; Let R25:R24 = Y, R19:R18 = X, R23:R22 = Y
+    ; We have Z = X*Y or Z2*H^2 + Z1*H + Z0 = (X1*H + X0)(Y1*H + Y0)
+    ; were H = 2^9
+    ;
+    ; Z0 = Lo(X0*Y0)
+    ; Z1 = Hi(X0*Y0) + Lo(X1*Y0) + Lo(X0*Y1)
+    ; Z2 = X1*Y1 (Overflow, don't even calculate)
 
-    ; Note that (R25+R24)(R23+R22) = R25*R23 + R25*R22 + R24*R23 + R24*R22
-    ;             H   L    H   L       O+H       O+H       O+H       H+L
-    ; We save L bytes in R2, H bytes in R3 and throw O bytes
+    ; Z1:Z0 = X0*Y0
+    MUL X0, Y0; R1:R0 = X0*Y0
+    MOVW Z0, R0; Z1:Z0 = R1:R0
 
-    MUL R24, R22; R1:R0 = R24*R22
-    MOV R2, R0; Save result
-    MOV R3, R1; Save result
+    ; Z1 = Z1 + X1*Y0
+    MUL X1, Y0; R1:R0 = X1*Y0
+    ADD Z1, R0; Z1 += R0
 
-    MUL R24, R23; R1:R0 = R24*R23
-    ADD R3, R0; Save result
+    ; Z1 = Z1 + X0*X1
+    MUL X0, Y1; R1:R0 = X0*Y1
+    ADD Z1, R0; Z1 += R0
 
-    MUL R25, R22; R1:R0 = R25*R22
-    ADD R3, R0; Save result
-
-    MUL R25, R23; R1:R0 = R25*R23
-    ADD R2, R0; Save result
-
-    ; Set return values
-    MOV R24, R2;
-    MOV R25, R3;
-
-    POP R3;
-    POP R2;
     CLR R1;
     POP R0;
+
     RET
 
 .global busy_wait_ms0
