@@ -11,6 +11,8 @@
 extern void enable();
 extern void toggle();
 
+extern uint16_t div16(uint16_t numerator, uint16_t denominator);
+
 void debug_print(uint8_t index) {
     printf("%u: TM=%u, OC=%d TIFR=0x%x\n", index, read_timer1(), OCR1A, TIFR1);
 }
@@ -21,6 +23,7 @@ int main() {
     start_counter0();
     enable();
     printf("\nNEW\n");
+    printf("%u\n", div16(1000, 3));
     uint8_t count;
     while(1) {
         count = 0;

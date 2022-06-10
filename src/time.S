@@ -1,5 +1,13 @@
 #include <avr/io.h>
 
+.global test_div
+test_div:
+    LDI R22, 0xe8;
+    LDI R23, 0x03;
+    CALL __udivmodhi4
+    MOV R24, R22;
+    RET
+
 .global start_counter0
 start_counter0:
     ; Reset counter
@@ -48,42 +56,16 @@ read_timer1:
     SEI; Enable interrupts
     RET;
 
-.global mul16
-; R25:R24 = R25:R24 * R23:R22
-#define Z1 R25
-#define Z0 R24
-#define X1 R19
-#define X0 R18
-#define Y1 R23
-#define Y0 R22
-mul16:
-    PUSH R0;
-    MOVW R18, R24;
-    ; Now calculate R25:R24 = R19:R18 * R23:R22
-    ; Let R25:R24 = Y, R19:R18 = X, R23:R22 = Y
-    ; We have Z = X*Y or Z2*H^2 + Z1*H + Z0 = (X1*H + X0)(Y1*H + Y0)
-    ; were H = 2^9
-    ;
-    ; Z0 = Lo(X0*Y0)
-    ; Z1 = Hi(X0*Y0) + Lo(X1*Y0) + Lo(X0*Y1)
-    ; Z2 = X1*Y1 (Overflow, don't even calculate)
 
-    ; Z1:Z0 = X0*Y0
-    MUL X0, Y0; R1:R0 = X0*Y0
-    MOVW Z0, R0; Z1:Z0 = R1:R0
+.GLOBal time_ms_since0
+; Input R24 (timestamp)
+time_ms_since0:
+    ; Calculate counter differance
+    MOV R25, R24;
+    CALL read_timer0; R24 = TCNT0
+    SUB R24, R25;
+    ; Count = PRESCALER/F_CPU
 
-    ; Z1 = Z1 + X1*Y0
-    MUL X1, Y0; R1:R0 = X1*Y0
-    ADD Z1, R0; Z1 += R0
-
-    ; Z1 = Z1 + X0*X1
-    MUL X0, Y1; R1:R0 = X0*Y1
-    ADD Z1, R0; Z1 += R0
-
-    CLR R1;
-    POP R0;
-
-    RET
 
 .global busy_wait_ms0
 ; Input R24 (ms to wait)
