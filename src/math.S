@@ -38,7 +38,7 @@ mul16:
 .global div16
 ; Divide two 16 bit numbers.
 ; R25:R24 = R25:R24 / R23:R22
-#define counter R0
+#define counter R1
 #define numerH R17
 #define numerL R16
 #define denomH R23
@@ -47,10 +47,10 @@ mul16:
 #define resultH R25
 #define resultL R24
 div16:
-    PUSH counter
+    PUSH R16;
+    PUSH R17;
     MOVW numerL, R24;
 
-    CLR counter;
     CLR resultL;
     CLR resultH;
 div16_shift_denom:
@@ -80,5 +80,7 @@ div16_result:
     DEC counter;
     BRNE div16_divide;
     ; Return
-    POP counter;
+    POP R17;
+    POP R16;
+    CLR R1;
     RET;
