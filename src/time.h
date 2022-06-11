@@ -4,12 +4,24 @@
 #ifndef TIME_H_
 #define TIME_H_
 
-extern uint16_t read_timer0();
+/* Get a timestamp from timer 0/1 */
+extern uint8_t read_timer0();
 extern uint16_t read_timer1();
 
 /* (Re)start counter 0/1 with a prescaler 1024 */
 extern void start_counter0();
 extern void start_counter1();
+
+/* Calculate time in ms between two timestamps (from counter 0).
+ *
+ * Note: prescaler must be 1024.
+ *
+ * Can not handle a timestamp more than 255 counts ago ->
+ * 2^16/(F_CPU/1,000,000*250) ms
+ *
+ * For F_CPU = 8 MHz that is 1 <= T <= 32 [ms]
+ */
+extern uint16_t timestamp_to_ms0(uint8_t timestamp0, uint8_t timestamp1);
 
 /* Use counter 0 timer A to perform a busy wait
  *

@@ -1,12 +1,6 @@
 #include <avr/io.h>
 
-.global test_div
-test_div:
-    LDI R22, 0xe8;
-    LDI R23, 0x03;
-    CALL __udivmodhi4
-    MOV R24, R22;
-    RET
+#define N F_CPU/1000000
 
 .global start_counter0
 start_counter0:
@@ -57,15 +51,22 @@ read_timer1:
     RET;
 
 
-.GLOBal time_ms_since0
-; Input R24 (timestamp)
-time_ms_since0:
+.global timestamp_to_ms0
+; Input R24 (timestamp 1), R22 (timestamp 2)
+; Output R25:R24 (ms timestamp diff) (R25 probably 0)
+timestamp_to_ms0:
     ; Calculate counter differance
-    MOV R25, R24;
-    CALL read_timer0; R24 = TCNT0
-    SUB R24, R25;
-    ; Count = PRESCALER/F_CPU
+    MOV R25, R22;
+    SUB R25, R24; R25 = R25 - R24
 
+    ; counts = T*F_CPU/1000/PRESCALER = T*N*1,000/2^10 <=>
+    ; T = 2^8*counts/(N*250)
+    CLR R24; By puting counts in R25 it is already multiplied by 2^8
+    LDI R23, hi8(N*250);
+    LDI R22, lo8(N*250);
+    CALL div16; R25:R24 = R25:R24 / R23:R22
+
+    RET;
 
 .global busy_wait_ms0
 ; Input R24 (ms to wait)
@@ -83,7 +84,7 @@ busy_wait_ms0:
     ; This calculation overflows when NT > 85
 
     ; Calculate T*N
-    LDI R22, F_CPU/1000000;
+    LDI R22, N;
     MUL R22, R24; R1:R0 = R22*R24
     MOV R2, R0; Save result
     MOV R24, R0;

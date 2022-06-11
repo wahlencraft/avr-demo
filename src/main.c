@@ -23,11 +23,41 @@ int main() {
     start_counter0();
     enable();
     printf("\nNEW\n");
-    printf("%u\n", div16(1000, 3));
+
+    printf("1 ms\n");
+    uint8_t timestamp0 = read_timer0();
+    busy_wait_ms0(1);
+    uint8_t timestamp1 = read_timer0();
+    printf("%u counts: %u ms\n", timestamp1 - timestamp0, timestamp_to_ms0(timestamp0, timestamp1));
+
+    printf("3 ms\n");
+    timestamp0 = read_timer0();
+    busy_wait_ms0(3);
+    timestamp1 = read_timer0();
+    printf("%u counts: %u ms\n", timestamp1 - timestamp0, timestamp_to_ms0(timestamp0, timestamp1));
+
+    printf("10 ms\n");
+    timestamp0 = read_timer0();
+    busy_wait_ms0(10);
+    timestamp1 = read_timer0();
+    printf("%u counts: %u ms\n", timestamp1 - timestamp0, timestamp_to_ms0(timestamp0, timestamp1));
+
+    printf("17 ms\n");
+    timestamp0 = read_timer0();
+    busy_wait_ms0(17);
+    timestamp1 = read_timer0();
+    printf("%u counts: %u ms\n", timestamp1 - timestamp0, timestamp_to_ms0(timestamp0, timestamp1));
+
+    printf("32 ms\n");
+    timestamp0 = read_timer0();
+    busy_wait_ms0(32);
+    timestamp1 = read_timer0();
+    printf("%u counts: %u ms\n", timestamp1 - timestamp0, timestamp_to_ms0(timestamp0, timestamp1));
+
     uint8_t count;
     while(1) {
         count = 0;
-        printf("Blink HIGH\n");
+        //printf("Blink HIGH\n");
         while (count++ != 200) {
             toggle();
             busy_wait_ms0(2);
@@ -35,7 +65,7 @@ int main() {
             busy_wait_ms0(8);
         }
         count = 0;
-        printf("Blink LOW\n");
+        //printf("Blink LOW\n");
         while (count++ != 100) {
             toggle();
             busy_wait_ms0(1);
