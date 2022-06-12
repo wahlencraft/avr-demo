@@ -12,6 +12,8 @@ extern void enable();
 extern void toggle();
 
 extern uint16_t div16(uint16_t numerator, uint16_t denominator);
+extern uint32_t div24(uint32_t numerator, uint32_t denominator);
+extern uint32_t div32(uint32_t numerator, uint32_t denominator);
 
 void debug_print(uint8_t index) {
     printf("%u: TM=%u, OC=%d TIFR=0x%x\n", index, read_timer1(), OCR1A, TIFR1);
@@ -23,6 +25,10 @@ int main() {
     start_counter0();
     enable();
     printf("\nNEW\n");
+
+    printf("div32: %lu\n", div32(18000000, 9000));
+    printf("div24: %lu\n", div24(15000000, 3000));
+    busy_wait_ms0(32);  // Clear out-stream before next section
 
     printf("1 ms\n");
     uint8_t timestamp0 = read_timer0();
