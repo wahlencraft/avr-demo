@@ -30,6 +30,7 @@ int main() {
     printf("div24: %lu\n", div24(15000000, 3000));
     busy_wait_ms0(32);  // Clear out-stream before next section
 
+    printf("\nTimer 0\n");
     printf("1 ms\n");
     uint8_t timestamp0 = read_timer0();
     busy_wait_ms0(1);
@@ -59,6 +60,37 @@ int main() {
     busy_wait_ms0(32);
     timestamp1 = read_timer0();
     printf("%u counts: %u ms\n", timestamp1 - timestamp0, timestamp_to_ms0(timestamp0, timestamp1));
+
+    printf("\nTimer 1\n");
+    start_counter1();
+    printf("500 ms\n");
+    uint16_t timestamp2 = read_timer1();
+    busy_wait_ms1(500);
+    uint16_t timestamp3 = read_timer1();
+    printf("%u counts: %u ms\n", timestamp3 - timestamp2, timestamp_to_ms1(timestamp2, timestamp3));
+
+    printf("1 ms\n");
+    timestamp2 = read_timer1();
+    busy_wait_ms1(1);
+    timestamp3 = read_timer1();
+    printf("%u counts: %u ms\n", timestamp3 - timestamp2, timestamp_to_ms1(timestamp2, timestamp3));
+
+    start_counter1();
+    printf("2730 ms\n");
+    timestamp2 = read_timer1();
+    busy_wait_ms1(2730);  // Max possible wait @8 MHz
+    timestamp3 = read_timer1();
+    printf("%x counts: %u ms\n", timestamp3 - timestamp2, timestamp_to_ms1(timestamp2, timestamp3));
+
+    printf("8387 ms\n");  // Max possible time measure @8 MHz
+    timestamp2 = read_timer1();
+    busy_wait_ms1(2000);
+    busy_wait_ms1(2000);
+    busy_wait_ms1(2000);
+    busy_wait_ms1(2000);
+    busy_wait_ms1(387);
+    timestamp3 = read_timer1();
+    printf("%u counts: %u ms\n", timestamp3 - timestamp2, timestamp_to_ms1(timestamp2, timestamp3));
 
     uint8_t count;
     while(1) {

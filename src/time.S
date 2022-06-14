@@ -68,6 +68,35 @@ timestamp_to_ms0:
 
     RET;
 
+.global timestamp_to_ms1
+; Input R25:R24 (timestamp 1), R23:R22 (timestamp 2)
+; Output R25:R24 (ms timestamp diff)
+timestamp_to_ms1:
+    ; Calculate counter differance
+    SUB R22, R24; R23:R22 = R23:R22 - R25:R24
+    SBC R23, R25;
+
+    ; counts = T*F_CPU/1000/PRESCALER = T*N*1,000/2^10 <=>
+    ; T = 2^8*counts/(N*250)
+
+    ; R24:R23:R22 = (R23:R22 << 8)
+    MOV R24, R23;
+    MOV R23, R22;
+    CLR R22;
+
+    ; R20:R19:R18 = N*250
+    LDI R18, lo8(N*250);
+    LDI R19, hi8(N*250);
+    CLR R20;
+
+    CALL div24; R24:R23:R22 = R24:R23:R22 / R20:R19:R18
+
+    ; Output R25:R24 (throw highest byte)
+    MOV R25, R23;
+    MOV R24, R22;
+
+    RET;
+
 .global busy_wait_ms0
 ; Input R24 (ms to wait)
 busy_wait_ms0:
