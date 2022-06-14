@@ -30,7 +30,7 @@ extern uint16_t timestamp_to_ms0(uint8_t timestamp0, uint8_t timestamp1);
  * Can not handle a timestamp more than 65535 counts ago ->
  * 2^24/(F_CPU/1,000,000*250) ms
  *
- * For F_CPU = 8 MHz that is 1 <= T <= 8387 [ms]
+ * For F_CPU = 8 MHz that is 1 <= T <= 8388 [ms]
  */
 extern uint16_t timestamp_to_ms1(uint16_t timestamp0, uint16_t timestamp1);
 
@@ -41,8 +41,8 @@ extern uint16_t timestamp_to_ms1(uint16_t timestamp0, uint16_t timestamp1);
  * things.
  *
  * Note that the rage of allowed t depends on the system clock frequency
- * F_CPU/1,000,000 <= t*F_CPU/1,000,000 < 257
- * Also note that the system clock must be a multiple of 1,000,000
+ * 1 <= t =< 255*1024/(F_CPU/1,000) [ms]
+ * Also note that the system clock must be a multiple of 1,000
  *
  * For F_CPU = 8 MHz that is
  * 1 <= t <= 32 [ms]
@@ -56,11 +56,11 @@ extern void busy_wait_ms0(uint8_t t);
  * things.
  *
  * Note that the rage of allowed t depends on the system clock frequency
- * F_CPU/1,000,000 <= t*F_CPU/1,000,000 < 21,845
- * Also note that the system clock must be a multiple of 1,000,000
+ * 1 <= t =< 65535*1024/(F_CPU/1,000) [ms]
+ * Also note that the system clock must be a multiple of 1,000
  *
  * For F_CPU = 8 MHz that is
- * 1 <= t <= 2730 [ms]
+ * 1 <= t <= 8,388 [ms]
  */
 extern void busy_wait_ms1(uint16_t t);
 

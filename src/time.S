@@ -100,53 +100,37 @@ timestamp_to_ms1:
 .global busy_wait_ms0
 ; Input R24 (ms to wait)
 busy_wait_ms0:
-    PUSH R0;
-    PUSH R2;
-    PUSH R3;
-
     ; Calculate number of timer counts to wait
     ; {
     ; To wait T ms the timer should count T*F_CPU/1000/PRESCALER times
     ; Assume F_CPU = N*1,000,000 and PRESCALER = 1024
-    ; count = T*125N/2^7 = TN - (3TN >> 7)
-    ; The last step is necessary to keep all calculations below 8 bits
-    ; This calculation overflows when NT > 85
+    ; So counts = (T*(F_CPU/1,000))/1024
 
-    ; Calculate T*N
-    LDI R22, N;
-    MUL R22, R24; R1:R0 = R22*R24
-    MOV R2, R0; Save result
-    MOV R24, R0;
-    MOV R25, R1;
+    ; R25:R24 = T*F_CPU/1000
+    CLR R25;
+    LDI R23, hi8(F_CPU/1000);
+    LDI R22, lo8(F_CPU/1000);
+    CALL mul16; R25:R24:R23:R22 = R25:R24 * R23:R22
 
-    ; Calculate 3*TN
-    CLR R23;
-    LDI R22, 3;
-    CALL mul16; R25:R24 = R25:R24 * R23:R22
+    ; R25:R24:R23 = R25:R24:R23:R22 / 256
 
-    ; Calculate R25 = (3TN >> 7)
-    ; Result should be like this (where a-p is 1 or 0):
-    ; R25=abcdefgh R24=ijklmnop -> R25=bcdefghi
-    LSL R25; Shift left, R25=bcdefgh0
-    LSL R24; Shift left (just to set C flag)
-    ADC R25, R1; Add the carry bit R25=bcdefghi (R1 = 0)
+    ; R23 = Lo(R25:R24:R23 / 4) = (T*(F_CPU/1,000))/1024 = counts
+    LSR R24;
+    ROR R23;
 
-    ; Calculate TN - (RTN >> 7) aka R3:R2 - R1:R25 (R1 = 0)
-    ; Save result in R2
-    SUB R2, R25;
-    ; Should do: "SBC R3, R1" but we're no longer intrested in high byte
-
+    LSR R24;
+    ROR R23;
     ; }
 
     ; Get current counter value
     CALL read_timer0; R24 = TCNT0
 
     ; Calculate OCR
-    ; R2 = R2 + R24
-    ADD R2, R24;
+    ; R24 = R24 + R23
+    ADD R24, R23;
 
     ; Set OCR
-    STS OCR0A, R2;
+    STS OCR0A, R24;
 
     ; Wait for output compare match flag
     SBIS TIFR0-0x20, OCF0A; Skip if flag bit is set
@@ -155,66 +139,49 @@ busy_wait_ms0:
     ; Clear output compare match flag
     SBI TIFR0-0x20, OCF0A;
 
-    POP R3;
-    POP R2;
-    CLR R1;
-    POP R0;
     RET
 
 .global busy_wait_ms1
 ; Input R25:R24 (ms to wait)
 busy_wait_ms1:
-    PUSH R0;
-    PUSH R2;
-    PUSH R3;
-
     ; Calculate number of timer counts to wait
     ; {
     ; To wait T ms the timer should count T*F_CPU/1000/PRESCALER times
     ; Assume F_CPU = N*1,000,000 and PRESCALER = 1024
-    ; count = T*125N/2^7 = TN - (3TN >> 7)
-    ; The last step is necessary to keep all calculations below 16 bits
-    ; This calculation overflows when NT > 21,845 which is adequate
+    ; So counts = (T*(F_CPU/1,000))/1024
 
     ; Calculate T*N
-    CLR R23;
-    LDI R22, F_CPU/1000000;
-    CALL mul16; R25:R24 = R25:R24 * R23:R22
-    MOV R2, R24; Save result
-    MOV R3, R25;
+    LDI R23, hi8(F_CPU/1000);
+    LDI R22, lo8(F_CPU/1000);
+    CALL mul16; R25:R24:R23:R22 = R25:R24 * R23:R22
 
-    ; Calculate 3*TN
-    CLR R23;
-    LDI R22, 3;
-    CALL mul16; R25:R24 = R25:R24 * R23:R22
+    ; R25:R24:R23 = R25:R24:R23:R22 / 256
 
-    ; Calculate R0:R25 = (3TN >> 7)
-    ; Result should be like this (where a-p is 1 or 0):
-    ; R25=abcdefgh R24=ijklmnop -> R0=0000000a R25=bcdefghi
-    CLR R0;
-    LSL R25; Shift left, R25=bcdefgh0
-    ADC R0, R1; Add the carry bit R0=0000000a (R1 empty)
-    LSL R24; Shift left (just to set C flag)
-    ADC R25, R1; Add the carry bit R25=bcdefghi
+    ; R24:R23 = Lo16(R25:R24:R23 / 4) = (T*(F_CPU/1,000))/1024 = counts
+    LSR R25;
+    ROR R24;
+    ROR R23;
 
-    ; Calculate TN - (RTN >> 7) aka R3:R2 - R0:R25
-    ; Save result in R3:R2
-    SUB R2, R25;
-    SBC R3, R0;
+    LSR R25;
+    ROR R24;
+    ROR R23;
 
+    ; Save counts in R23:R22
+    MOV R22, R23;
+    MOV R23, R24;
     ; }
 
     ; Get current counter value
     CALL read_timer1; R25:R24 = TCNT1
 
     ; Calculate OCR
-    ; R3:R2 = R3:R2 + R25:R24
-    ADD R2, R24;
-    ADC R3, R25;
+    ; R23:R22 = R23:R22 + R25:R24
+    ADD R22, R24;
+    ADC R23, R25;
 
     ; Set OCR
-    STS OCR1AH, R3;
-    STS OCR1AL, R2;
+    STS OCR1AH, R23;
+    STS OCR1AL, R22;
 
     ; Wait for output compare match flag
     SBIS TIFR1-0x20, OCF1A; Skip if flag bit is set
@@ -223,8 +190,4 @@ busy_wait_ms1:
     ; Clear output compare match flag
     SBI TIFR1-0x20, OCF1A;
 
-    POP R3;
-    POP R2;
-    CLR R1;
-    POP R0;
     RET

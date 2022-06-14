@@ -1,34 +1,46 @@
 .global mul16
-; R25:R24 = R25:R24 * R23:R22
-#define Z1 R25
-#define Z0 R24
+; R25:R24:R23:R22 = R25:R24 * R23:R22
+#define Z3 R25
+#define Z2 R24
+#define Z1 R23
+#define Z0 R22
 #define X1 R19
 #define X0 R18
-#define Y1 R23
-#define Y0 R22
+#define Y1 R27
+#define Y0 R26
 mul16:
     PUSH R0;
     MOVW R18, R24;
-    ; Now calculate R25:R24 = R19:R18 * R23:R22
-    ; Let R25:R24 = Y, R19:R18 = X, R23:R22 = Y
-    ; We have Z = X*Y or Z2*H^2 + Z1*H + Z0 = (X1*H + X0)(Y1*H + Y0)
-    ; were H = 2^9
+    MOVW R26, R22;
+    ; Now calculate R25:R24:R23:R22 = R19:R18 * R27:R26
+    ; Let R25:R24:R23:R22 = Z, R19:R18 = X, R27:R26 = Y
+    ; We have Z = X*Y or
+    ; Z3*2^24 + Z2*2^16 + Z1*2^8 + Z0*2^0 = (X1*2^8 + X0*2^0)(Y1*2^8 + Y0*2^0)
     ;
     ; Z0 = Lo(X0*Y0)
     ; Z1 = Hi(X0*Y0) + Lo(X1*Y0) + Lo(X0*Y1)
-    ; Z2 = X1*Y1 (Overflow, don't even calculate)
+    ; Z2 = Lo(X1*Y1) + Hi(X1*Y0) + Hi(X0*Y1)
+    ; Z3 = Hi(X1*Y1)
 
     ; Z1:Z0 = X0*Y0
     MUL X0, Y0; R1:R0 = X0*Y0
     MOVW Z0, R0; Z1:Z0 = R1:R0
 
-    ; Z1 = Z1 + X1*Y0
+    ; Z3:Z2 = X1*Y1
+    MUL X1, Y1; R1:R0 = X1*Y1
+    MOVW Z2, R0; Z3:Z2 = R1:R0
+
+    ; Z1 = Z1 + Lo(X1*Y0)
+    ; Z2 = Z2 + Hi(X1*Y0) + C
     MUL X1, Y0; R1:R0 = X1*Y0
     ADD Z1, R0; Z1 += R0
+    ADC Z2, R1; Z2 += R1
 
-    ; Z1 = Z1 + X0*X1
+    ; Z1 = Z1 + Lo(X0*X1)
+    ; Z2 = Z2 + Hi(X0*X1) + C
     MUL X0, Y1; R1:R0 = X0*Y1
     ADD Z1, R0; Z1 += R0
+    ADC Z2, R1; Z2 += R1
 
     CLR R1;
     POP R0;
