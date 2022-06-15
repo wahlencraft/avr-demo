@@ -141,16 +141,14 @@ busy_wait_ms0:
 
     RET
 
-.global busy_wait_ms1
-; Input R25:R24 (ms to wait)
-busy_wait_ms1:
-    ; Calculate number of timer counts to wait
-    ; {
+; Calculate number of timer counts to wait
+; Input R25:R24 (ms)
+; Output R23:R22 (counts)
+calc_counts_helper:
     ; To wait T ms the timer should count T*F_CPU/1000/PRESCALER times
     ; Assume F_CPU = N*1,000,000 and PRESCALER = 1024
     ; So counts = (T*(F_CPU/1,000))/1024
 
-    ; Calculate T*N
     LDI R23, hi8(F_CPU/1000);
     LDI R22, lo8(F_CPU/1000);
     CALL mul16; R25:R24:R23:R22 = R25:R24 * R23:R22
@@ -169,7 +167,14 @@ busy_wait_ms1:
     ; Save counts in R23:R22
     MOV R22, R23;
     MOV R23, R24;
-    ; }
+
+    RET;
+
+.global busy_wait_ms1
+; Input R25:R24 (ms to wait)
+busy_wait_ms1:
+    ; Calculate number of counts to wait, output in R23:R22
+    CALL calc_counts_helper;
 
     ; Get current counter value
     CALL read_timer1; R25:R24 = TCNT1
@@ -191,3 +196,65 @@ busy_wait_ms1:
     SBI TIFR1-0x20, OCF1A;
 
     RET
+
+.global TIMER1_COMPA_vect
+; Interupt timer 1
+; Used by sleep_ms1: Clear OCIEA1 and disable sleep mode
+TIMER1_COMPA_vect:
+    PUSH R16;
+    PUSH R17;
+    IN R16, SREG-0x20;
+
+    ; Clear output compare interupt enable A for timer 1
+    LDS R17, TIMSK1;
+    CBR R17, (1<<OCIE1A);
+    STS TIMSK1, R17;
+
+    ; Disable sleep mode
+    LDS R17, SMCR;
+    CBR R17, (1<<SE);
+    STS SMCR, R17;
+
+    OUT SREG-0x20, R16;  Restore SREG value
+    POP R17;
+    POP R16;
+    RETI;
+
+.global sleep_ms1
+; Input R25:R24 (ms to wait)
+sleep_ms1:
+    ; Calculate number of counts to wait, output in R23:R22
+    CALL calc_counts_helper;
+
+    ; Get current counter value
+    CALL read_timer1; R25:R24 = TCNT1
+
+    ; Calculate OCR
+    ; R23:R22 = R23:R22 + R25:R24
+    ADD R22, R24;
+    ADC R23, R25;
+
+    ; Set OCR
+    STS OCR1AH, R23;
+    STS OCR1AL, R22;
+
+    ; Set output compare interrupt enable A for timer 1
+    LDS R17, TIMSK1;
+    SBR R17, (1<<OCIE1A);
+    STS TIMSK1, R17;
+
+sleep_ms1_loop:
+    ; Enable sleep mode
+    LDS R17, SMCR;
+    SBR R17, (1<<SE);
+    STS SMCR, R17;
+
+    SLEEP;  Sleep until interrupt
+
+    ; Check that OCIEA1 is cleared, otherwise it was another interrupt
+    LDS R17, TIMSK1;
+    SBRC R17, OCIE1A;  Skip if OCIE1A clear, otherwise sleep again
+    JMP sleep_ms1_loop;
+
+    RET;
+
