@@ -4,6 +4,7 @@ In this project I test low-level functionality of an AVR-microcontroller
 Functionality includes:
 - Toggle LED
 - Busy wait
+- Sleep
 - Measure time
 - Print over USART
 
