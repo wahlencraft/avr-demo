@@ -97,13 +97,12 @@ timestamp_to_ms1:
 
     RET;
 
-.global busy_wait_ms0
-; Input R24 (ms to wait)
-busy_wait_ms0:
-    ; Calculate number of timer counts to wait
-    ; {
+; Calculate number of timer counts to wait
+; Input R24 (ms)
+; Output R23 (counts)
+calc_counts_8_bits:
     ; To wait T ms the timer should count T*F_CPU/1000/PRESCALER times
-    ; Assume F_CPU = N*1,000,000 and PRESCALER = 1024
+    ; Assume F_CPU = N*1,000 and PRESCALER = 1024
     ; So counts = (T*(F_CPU/1,000))/1024
 
     ; R25:R24 = T*F_CPU/1000
@@ -120,7 +119,14 @@ busy_wait_ms0:
 
     LSR R24;
     ROR R23;
-    ; }
+
+    RET;
+
+.global busy_wait_ms0
+; Input R24 (ms to wait)
+busy_wait_ms0:
+    ; Calculate number of counts to wait, output in R23
+    CALL calc_counts_8_bits;
 
     ; Get current counter value
     CALL read_timer0; R24 = TCNT0
@@ -141,10 +147,69 @@ busy_wait_ms0:
 
     RET
 
+.global TIMER0_COMPA_vect
+; Interupt timer 0
+; Used by sleep_ms0: Clear OCIEA0 and disable sleep mode
+TIMER0_COMPA_vect:
+    PUSH R16;
+    PUSH R17;
+    IN R16, SREG-0x20;
+
+    ; Clear output compare interupt enable A for timer 1
+    LDS R17, TIMSK0;
+    CBR R17, (1<<OCIE0A);
+    STS TIMSK0, R17;
+
+    ; Disable sleep mode
+    LDS R17, SMCR;
+    CBR R17, (1<<SE);
+    STS SMCR, R17;
+
+    OUT SREG-0x20, R16;  Restore SREG value
+    POP R17;
+    POP R16;
+    RETI;
+
+.global sleep_ms0
+; Input R24 (ms to wait)
+sleep_ms0:
+    ; Calculate number of counts to wait, output in R23
+    CALL calc_counts_8_bits;
+
+    ; Get current counter value
+    CALL read_timer0; R24 = TCNT0
+
+    ; Calculate OCR
+    ; R24 = R24 + R23
+    ADD R24, R23;
+
+    ; Set OCR
+    STS OCR0A, R24;
+
+    ; Set output compare interrupt enable A for timer 0
+    LDS R18, TIMSK0;
+    SBR R18, (1<<OCIE0A);
+    STS TIMSK0, R18;
+
+sleep_ms0_loop:
+    ; Enable sleep mode
+    LDS R18, SMCR;
+    SBR R18, (1<<SE);
+    STS SMCR, R18;
+
+    SLEEP;  Sleep until interrupt
+
+    ; Check that OCIEA0 is cleared, otherwise it was another interrupt
+    LDS R18, TIMSK0;
+    SBRC R18, OCIE0A;  Skip if OCIE1A clear, otherwise sleep again
+    JMP sleep_ms0_loop;
+
+    RET;
+
 ; Calculate number of timer counts to wait
 ; Input R25:R24 (ms)
 ; Output R23:R22 (counts)
-calc_counts_helper:
+calc_counts_16_bits:
     ; To wait T ms the timer should count T*F_CPU/1000/PRESCALER times
     ; Assume F_CPU = N*1,000,000 and PRESCALER = 1024
     ; So counts = (T*(F_CPU/1,000))/1024
@@ -174,7 +239,7 @@ calc_counts_helper:
 ; Input R25:R24 (ms to wait)
 busy_wait_ms1:
     ; Calculate number of counts to wait, output in R23:R22
-    CALL calc_counts_helper;
+    CALL calc_counts_16_bits;
 
     ; Get current counter value
     CALL read_timer1; R25:R24 = TCNT1
@@ -224,7 +289,7 @@ TIMER1_COMPA_vect:
 ; Input R25:R24 (ms to wait)
 sleep_ms1:
     ; Calculate number of counts to wait, output in R23:R22
-    CALL calc_counts_helper;
+    CALL calc_counts_16_bits;
 
     ; Get current counter value
     CALL read_timer1; R25:R24 = TCNT1

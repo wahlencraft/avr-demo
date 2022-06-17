@@ -64,6 +64,21 @@ extern void busy_wait_ms0(uint8_t t);
  */
 extern void busy_wait_ms1(uint16_t t);
 
+/* Use counter 0 timer A to sleep
+ *
+ * Counter 0 must be started first (with prescaler 1024)
+ * The counter is not reset due to this call. So it can also be used for other
+ * things.
+ *
+ * Note that the rage of allowed t depends on the system clock frequency
+ * 1 <= t =< 255*1024/(F_CPU/1,000) [ms]
+ * Also note that the system clock must be a multiple of 1,000
+ *
+ * For F_CPU = 8 MHz that is
+ * 1 <= t <= 32 [ms]
+ */
+extern void sleep_ms0(uint16_t t);
+
 /* Use counter 1 timer A to sleep
  *
  * Counter 1 must be started first (with prescaler 1024)
