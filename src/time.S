@@ -239,21 +239,21 @@ sleep_ms1:
     STS OCR1AL, R22;
 
     ; Set output compare interrupt enable A for timer 1
-    LDS R17, TIMSK1;
-    SBR R17, (1<<OCIE1A);
-    STS TIMSK1, R17;
+    LDS R18, TIMSK1;
+    SBR R18, (1<<OCIE1A);
+    STS TIMSK1, R18;
 
 sleep_ms1_loop:
     ; Enable sleep mode
-    LDS R17, SMCR;
-    SBR R17, (1<<SE);
-    STS SMCR, R17;
+    LDS R18, SMCR;
+    SBR R18, (1<<SE);
+    STS SMCR, R18;
 
     SLEEP;  Sleep until interrupt
 
     ; Check that OCIEA1 is cleared, otherwise it was another interrupt
-    LDS R17, TIMSK1;
-    SBRC R17, OCIE1A;  Skip if OCIE1A clear, otherwise sleep again
+    LDS R18, TIMSK1;
+    SBRC R18, OCIE1A;  Skip if OCIE1A clear, otherwise sleep again
     JMP sleep_ms1_loop;
 
     RET;
