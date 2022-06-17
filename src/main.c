@@ -15,12 +15,7 @@ ISR(TIMER0_OVF_vect) {}
 int main() {
     stdout = &usart_stdout;
     USART_init();
-    enable();
     printf("\nBegin test program\n");
-
-    //// Start a seperate, disturbing interrupt
-    //start_counter0();
-    //TIMSK0 = 1<<TOIE0;
 
     start_counter0();
     start_counter1();
@@ -118,9 +113,20 @@ int main() {
         printf("Failed %u tests\n", error_count);
     }
 
+    // Sweep LED brightness
+    enable();
+    uint8_t ms = 1;
+    uint8_t c = 0;
     while(1) {
-        sleep_ms1(1000);
-        toggle();
+        c = 0;
+        while(c < 10) {
+            toggle();
+            busy_wait_ms0(ms);
+            toggle();
+            busy_wait_ms0(16 - ms);
+            c++;
+        }
+        ms = (ms == 15) ? 1 : ms + 1;
     };
 }
 
