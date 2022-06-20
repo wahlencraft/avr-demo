@@ -11,12 +11,12 @@ Functionality includes:
 ## Setup
 
 ### Hardware
-- ATMEGA328P (No Arduino boatload needed)
+- ATMEGA328P (No Arduino bootloader needed)
 - Breadboard (or something else to attach things too)
 - LED
 - Resistors
 - Wires
-- AVR programmer (I'm using [AVR Pocket programmer](https://www.sparkfun.com), others
+- AVR programmer (I'm using [AVR Pocket programmer](https://www.sparkfun.com/products/9825), others
   should work too).
 
 ### Programmer
@@ -25,7 +25,7 @@ supply. Other programmers might need to connect that separately.
 
 | Programmer | AVR |
 |------------|-----|
-| `MOSI` | `17` (`MISO`) |
+| `MOSI` | `17` (`MOSI`) |
 | `MISO` | `18` (`MISO`) |
 | `RST`  | `1` (`RESET`) |
 | `SCK`  | `19` (`SCK`)  |
