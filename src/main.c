@@ -1,16 +1,11 @@
 #include <stdint.h>
-#include <avr/sleep.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <stdio.h>
 
 #include "usart.h"
 #include "time.h"
-
-extern void enable();
-extern void toggle();
-
-ISR(TIMER0_OVF_vect) {}
+#include "io.h"
 
 int main() {
     stdout = &usart_stdout;
