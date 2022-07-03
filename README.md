@@ -61,6 +61,53 @@ with the command:
 minicom -b 9600 -o -D /dev/serial0
 ```
 
+#### Raspberry Pi Pico UART-USB bridge + Linux computer
+Download [Pico UART-USB bridge software](https://github.com/Noltari/pico-uart-bridge/releases/tag/v3.0) (uf2 file).
+
+Hold the BOOTSEL button on the Raspberry Pi Pico and insert the USB cable.
+
+Create a mount-point:
+```
+sudo mkdir -p /mnt/pico
+```
+
+Find the device name (`x` in `/dev/sdx`)
+```
+dmsg | tail
+```
+
+mount:
+```
+sudo mount /dev/sdx1 /mnt/pico
+```
+
+copy uf2 file, unmount:
+```
+sudo cp pico-uart-bridge-v3.0.uf2 /mnt/pico
+sudo sync
+sudo umount
+```
+
+Now connect the device.
+
+The `TX` (`3`) pin on atmega328p should be connected to the `RX` (`10`) pin on the
+Raspberry Pi Pico. However the voltage needs to be dropped from 5 V to 3.3 V. That
+can be done with a simple voltage slitter using 2 resistors.
+
+```
+                RX (3.3 V)
+                 |
+GND ---/\/\/\/---|---/\/\/\/--- TX (5 V)
+        2 kΩ          1 kΩ
+```
+
+Also connect the two grounds.
+
+Then open the terminal with:
+```
+sudo picocom /dev/ttyACM0 -b 9600 -l
+```
+
 ### Installation and programming (Linux)
 
 Install avrdude, avr-libc, avr-gcc and avr-binutils.
