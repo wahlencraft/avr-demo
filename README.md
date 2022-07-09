@@ -10,6 +10,9 @@ Functionality includes:
 
 ## Setup
 
+### Software
+Install the packages: avr-gcc, avr-binutils, avr-libc, avrdude
+
 ### Hardware
 - ATMEGA328P (No Arduino bootloader needed)
 - Breadboard (or something else to attach things too)
