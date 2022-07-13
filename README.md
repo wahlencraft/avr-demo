@@ -88,7 +88,7 @@ copy uf2 file, unmount:
 ```
 sudo cp pico-uart-bridge-v3.0.uf2 /mnt/pico
 sudo sync
-sudo umount
+sudo umount /mnt/pico
 ```
 
 Now connect the device.
